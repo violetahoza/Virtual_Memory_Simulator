@@ -100,43 +100,62 @@ public class MemoryManager {
         Page page = secondaryStorage.load(vpn);
 
         // Step 2: Check if main memory is full and perform eviction if necessary
+        int newFrame;
         if (mainMemory.isFull()) {
-            int evictVpn = replacementAlgorithm.evictPage();  // Determine which page to evict
+            // Get the page to evict using the replacement algorithm
+            int evictVpn = replacementAlgorithm.evictPage();
             PageTableEntry evictedEntry = pageTable.getEntry(evictVpn);
 
             if (evictedEntry != null) {
-                LogResults.log("Evicting physical page number: " + evictedEntry.getFrameNumber() + " for virtual page number: " + evictVpn);
+                int evictedFrame = evictedEntry.getFrameNumber();
+                LogResults.log("Evicting physical page number: " + evictedFrame + " for virtual page number: " + evictVpn);
 
-                // Step 3: If the evicted page is dirty, write it back to secondary storage
+                // If the evicted page is dirty, write it back to disk
                 if (evictedEntry.isDirty()) {
                     LogResults.log("Evicted page is dirty. Writing back to disk.");
-                    secondaryStorage.store(evictVpn, mainMemory.getPage(evictedEntry.getFrameNumber()));
-                    Results.diskWrite++;  // Increment disk write count
+                    secondaryStorage.store(evictVpn, mainMemory.getPage(evictedFrame));
+                    Results.diskWrite++;
                 }
 
-                // Invalidate the evicted page in the page table
+                // Remove the evicted page from memory
+                mainMemory.removePage(evictedFrame);
+
+                // Invalidate the evicted page in the page table and TLB
                 pageTable.setValid(evictVpn, false);
-                Results.pageEviction++;  // Increment page eviction count
+                tlb.removeEntry(evictVpn);
+
+                // Use the freed frame number for the new page
+                newFrame = evictedFrame;
+                Results.pageEviction++;
+            } else {
+                throw new IllegalStateException("Failed to evict a page");
             }
+        } else {
+            newFrame = mainMemory.loadPageIntoMemory(page);
         }
 
-        // Step 4: Load the new page into main memory
-        int newFrame = mainMemory.loadPageIntoMemory(page);
-        pageTable.addEntry(vpn, newFrame);  // Add page to page table as valid
-
-        // Step 5: Add the new page to the replacement algorithm's tracking structure
-        if (replacementAlgorithm instanceof FIFOReplacement) {
-            ((FIFOReplacement) replacementAlgorithm).addPage(vpn); // Add the newly loaded page to FIFO queue
+        // If newFrame is -1, something went wrong
+        if (newFrame == -1) {
+            throw new IllegalStateException("Failed to allocate frame for new page");
         }
 
-        Results.diskRead++;  // Increment disk read count
+        // Load the new page into the freed or available frame
+        mainMemory.removePage(newFrame); // Clear any existing page
+        mainMemory.getMemory().put(newFrame, page);
+
+        // Update page table
+        pageTable.addEntry(vpn, newFrame);
+
+        // Update replacement algorithm
+        replacementAlgorithm.addPage(vpn);
+
+        Results.diskRead++;
         LogResults.log("Loaded virtual page number: " + vpn + " into physical frame number: " + newFrame);
 
-        // Step 6: Add the new page table entry to the TLB
+        // Update TLB
         PageTableEntry newEntry = new PageTableEntry(newFrame, true, false, true);
-        tlb.addEntry(vpn, newEntry);  // Update TLB with the new entry
+        tlb.addEntry(vpn, newEntry);
     }
-
     private void loadFromMemory(Address physicalAddress) {
         int data = mainMemory.load(physicalAddress);
         PageTableEntry entry = pageTable.getEntry(physicalAddress.getPageNumber());

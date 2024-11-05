@@ -22,10 +22,10 @@ public class MainMemory {
     // Loads data from memory for a specific address
     public int load(Address address) {
         Page page = memory.get(address.getPageNumber());
-        if (page != null) {
-            return page.load(address.getOffset());
+        if (page == null) {
+            throw new IllegalArgumentException("Invalid physical address: page not found.");
         }
-        throw new IllegalArgumentException("Invalid physical address: page not found.");
+        return page.load(address.getOffset());
     }
 
     // Stores data in memory for a specific address
@@ -45,22 +45,37 @@ public class MainMemory {
     // Loads a page into memory, assigning it a frame.
     public int loadPageIntoMemory(Page page) {
         if (isFull()) {
-            throw new IllegalStateException("Memory is full, cannot load more pages.");
+            // Find the lowest available frame number
+            for (int i = 0; i < nrFrames; i++) {
+                if (!memory.containsKey(i)) {
+                    memory.put(i, page.getCopy());
+                    return i;
+                }
+            }
+            return -1; // No frames available
         }
-        memory.put(lastFrameNr, page.getCopy());  // Deep copy the page and store it in memory
-        return lastFrameNr++;                     // Return frame number and increment lastFrameNr
+
+        memory.put(lastFrameNr, page.getCopy());
+        return lastFrameNr++;
+    }
+
+    public void removePage(int frameNumber) {
+        memory.remove(frameNumber);
+        // Don't decrement lastFrameNr, just remove the page
     }
 
     // Checks if memory is full
     public boolean isFull() {
-        return lastFrameNr >= nrFrames;
+        return memory.size() >= nrFrames;
     }
 
     // Retrieve a page at the specified frame number
     public Page getPage(int frameNr) {
         return memory.get(frameNr);
     }
-
+    public Map<Integer, Page> getMemory() {
+        return memory;
+    }
     // Retrieve the full memory contents as a map (frame -> {address -> data})
     public Map<Integer, Map<Integer, Integer>> getMemoryContents() {
         Map<Integer, Map<Integer, Integer>> memoryCopy = new HashMap<>();

@@ -16,8 +16,8 @@ public class Main {
 
         ReplacementAlgorithm replacementAlgorithm = new FIFOReplacement();
 
-        // Initialize Memory Manager with FIFO Replacement
-        MemoryManager memoryManager = new MemoryManager(virtualAddressWidth, tlbSize, pageTableSize, nrFrames, maxDiskPages, pageSize, null);
+// Initialize Memory Manager with FIFO Replacement
+        MemoryManager memoryManager = new MemoryManager(virtualAddressWidth, tlbSize, pageTableSize, nrFrames, maxDiskPages, pageSize, replacementAlgorithm);
 
         System.out.println("Virtual Memory Size: " + memoryManager.getVirtualMemorySize() + " bytes");
 
