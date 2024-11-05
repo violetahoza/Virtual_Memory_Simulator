@@ -1,0 +1,24 @@
+Access request for virtual address: Virtual page number: 2 Offset: 0
+TLB miss for virtual page nr: 2
+Page table miss for virtual page number: 2
+Page fault for virtual page number: 2. Loading page from disk.
+Loaded virtual page number: 2 into physical frame number: 0
+Loaded data: 0 from: Frame number: 0 Offset: 0
+Storing data to: Virtual page number: 2 Offset: 0 . Data stored: 42
+TLB hit! Physical page number: 0
+Stored data at: model.Address@73c6c3b2
+Stored data: 42 to: Frame number: 0 Offset: 0
+Access request for virtual address: Virtual page number: 3 Offset: 0
+TLB miss for virtual page nr: 3
+Page table miss for virtual page number: 3
+Page fault for virtual page number: 3. Loading page from disk.
+Loaded virtual page number: 3 into physical frame number: 1
+Loaded data: 0 from: Frame number: 1 Offset: 0
+Storing data to: Virtual page number: 3 Offset: 0 . Data stored: 12
+TLB hit! Physical page number: 1
+Stored data at: model.Address@48533e64
+Stored data: 12 to: Frame number: 1 Offset: 0
+Access request for virtual address: Virtual page number: 4 Offset: 0
+TLB miss for virtual page nr: 4
+Page table miss for virtual page number: 4
+Page fault for virtual page number: 4. Loading page from disk.
