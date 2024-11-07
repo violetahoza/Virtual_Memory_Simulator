@@ -5,52 +5,68 @@ import model.MemoryManager;
 import model.ReplacementAlgorithm;
 import model.Results;
 
+import java.util.Scanner;
+
 public class Main {
     public static void main(String[] args) {
         int tlbSize = 2;
-        int pageTableSize = 4; // Allows tracking of 4 virtual pages
-        int nrFrames = 2; // Only 2 physical frames, forcing eviction
-        int maxDiskPages = 5; // Secondary storage can hold 5 pages
-        int pageSize = 64; // Size of each page
-        int virtualAddressWidth = 10; // 10-bit virtual address space
+        int pageTableSize = 4;
+        int nrFrames = 2;
+        int maxDiskPages = 5;
+        int pageSize = 64;
+        int virtualAddressWidth = 10;
 
         ReplacementAlgorithm replacementAlgorithm = new FIFOReplacement();
-
-// Initialize Memory Manager with FIFO Replacement
         MemoryManager memoryManager = new MemoryManager(virtualAddressWidth, tlbSize, pageTableSize, nrFrames, maxDiskPages, pageSize, replacementAlgorithm);
 
-        System.out.println("Virtual Memory Size: " + memoryManager.getVirtualMemorySize() + " bytes");
+        Scanner scanner = new Scanner(System.in);
+        boolean running = true;
 
-        // Access a sequence of virtual addresses to demonstrate eviction
-        memoryManager.load(128);   // Load virtual address 128 (page fault)
-        memoryManager.store(128, 42); // Store value 42 at virtual address 128 (dirty)
+        while (running) {
+            System.out.println("\nMemory Management Simulator");
+            System.out.println("1. Load from virtual address");
+            System.out.println("2. Store to virtual address");
+            System.out.println("3. Print memory contents");
+            System.out.println("4. Display simulation results");
+            System.out.println("5. Exit");
+            System.out.print("Enter your choice: ");
+            int choice = scanner.nextInt();
 
-        memoryManager.load(192); // Load virtual address 192 (page fault, since it's not in memory)
-        memoryManager.store(192, 12); // Store value 12 at virtual address 192 (dirty)
+            switch (choice) {
+                case 1:
+                    System.out.print("Enter virtual address to load: ");
+                    int loadAddress = scanner.nextInt();
+                    memoryManager.load(loadAddress);
+                    break;
+                case 2:
+                    System.out.print("Enter virtual address to store: ");
+                    int storeAddress = scanner.nextInt();
+                    System.out.print("Enter data to store: ");
+                    int data = scanner.nextInt();
+                    memoryManager.store(storeAddress, data);
+                    break;
+                case 3:
+                    memoryManager.printMemoryContents();
+                    break;
+                case 4:
+                    System.out.println("Simulation Results:");
+                    System.out.println("TLB hits: " + Results.tlbHit);
+                    System.out.println("TLB misses: " + Results.tlbMiss);
+                    System.out.println("Page table hits: " + Results.pageTableHit);
+                    System.out.println("Page table misses: " + Results.pageTableMiss);
+                    System.out.println("Disk reads: " + Results.diskRead);
+                    System.out.println("Disk writes: " + Results.diskWrite);
+                    System.out.println("Pages evicted: " + Results.pageEviction);
+                    break;
+                case 5:
+                    running = false;
+                    System.out.println("Exiting the simulator.");
+                    break;
+                default:
+                    System.out.println("Invalid choice. Please try again.");
+            }
+        }
 
-        // At this point, the memory should be full (with pages 128 and 192 loaded).
-        // The next load should cause eviction.
-        memoryManager.load(256);   // Load virtual address 256 (page fault, triggers eviction)
-        memoryManager.store(256, 84); // Store value 84 at virtual address 256 (dirty)
-
-        // Accessing the previously stored addresses again to see TLB behavior and possibly evictions
-        memoryManager.load(128);    // Load virtual address 128 again (TLB hit)
-        memoryManager.load(192);    // Load virtual address 192 again (should now trigger eviction since 256 is dirty)
-
-        // Finally load address 256 to check if it was evicted properly
-        memoryManager.load(256);    // Check if page 256 is present and can be loaded (should also trigger a TLB hit if correctly managed)
-
-        // Print contents of memory, TLB, page table, and secondary storage
-        memoryManager.printMemoryContents();
-
-        // Display simulation results
-        System.out.println("Simulation Results:");
-        System.out.println("TLB hits: " + Results.tlbHit);
-        System.out.println("TLB misses: " + Results.tlbMiss);
-        System.out.println("Page table hits: " + Results.pageTableHit);
-        System.out.println("Page table misses: " + Results.pageTableMiss);
-        System.out.println("Disk reads: " + Results.diskRead);
-        System.out.println("Disk writes: " + Results.diskWrite);
-        System.out.println("Pages evicted: " + Results.pageEviction);
+        scanner.close();
     }
 }
